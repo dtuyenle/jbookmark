@@ -1,7 +1,3 @@
-
-
-
-
 (function(jQuery) {
 
 	/********** Storage **********/
@@ -42,7 +38,8 @@
 		}
 
 		function getImage() {
-			return jQuery('meta[property="og:image"]').attr('content')
+			var img = jQuery('meta[property="og:image"]').attr('content');
+			return typeof(img) === 'undefined' ? 'https://pbs.twimg.com/profile_images/433002200827039744/FVMo01fi.png' : img
 		}
 
 		function getTitle() {
@@ -69,18 +66,44 @@
 		}
 	}
 
-	/********** GUI Button **********/
-	function Button() {
-
-	}
-	Button.prototype = new HTMLBuilder();
-	Button.prototype.constructor = Button;
-
-
 
 	/********** GUI Interface **********/
+	function OverLay() {
+
+		this.html('body','<div id="jbookmark"></div>');
+		this.css('#jbookmark',{
+			'bottom': '0px',
+			'height': '1837px', 
+			'left': '0px',
+			'position': 'fixed', 
+			'right': '0px',
+			'top': '0px',
+			'width': '100%',
+			'zIndex': '999999999',
+			'display': 'none'
+		});
+			
+		this.html('#jbookmark','<div id="jbookmark-overlay"></div>');
+		this.css('#jbookmark-overlay',{
+			'background-color': 'rgb(255, 255, 255)',
+			'height': '1000px',
+			'opacity': '0.5',
+			'width': '100%',
+			'zIndex': '200'
+		});
+
+		jQuery('#jbookmark-overlay').on('click',function(){
+			jQuery(this).hide();
+			jQuery('#jbookmark').hide();
+		})
+
+	}
+	OverLay.prototype = new HTMLBuilder();
+	OverLay.prototype.constructor = OverLay;
+
+
 	function Container() {
-		this.html('body','<div id="jbookmark-container"></div>');
+		this.html('#jbookmark','<div id="jbookmark-container"></div>');
 		this.css('#jbookmark-container',{
 			'background-color' 	: '#eee',
 		  	'border' 			: '1px solid #ccc',
@@ -178,12 +201,12 @@
 		    'max-height' : '100px',
 		    'overflow' 	 : 'hidden',
 		    'margin-top' : '4px'
-		});
+		}); 
 
 		
 	}
 	NavigationItem.prototype = new HTMLBuilder();
-	NavigationItem.prototype.constructor = Container;
+	NavigationItem.prototype.constructor = NavigationItem;
 
 	function Navigation(option) {
 		var html = '<div id="jbookmark-slider">' +
@@ -228,22 +251,174 @@
 	Navigation.prototype.constructor = Navigation;
 
 
-	jQuery('#jbookmark-container').remove();
+	/********** GUI Button **********/
+	function Button() {
+		
+		this.widthOffScreen = 0;
+		this.slideInTime 	= 1000;
+		this.slideOutTime 	= 1000;
+
+		this.load = function() {
+			this.create();
+			this.style();
+			this.slideInAfter(this.slideInTime);
+
+		};
+
+		this.create = function() {
+			var html = '<div id="survey" style="display:none">' +
+							'<div id="survey-button-overlay"></div>' + 
+							'<span id="survey-close">x</span>' +
+							'<p>' +
+								'<a id="bookmark-page" href="#">' +
+									'Bookmark this page' +
+								'</a><br/>' +
+								'<a id="bookmark-center" href="#">' +
+									'Bookmark Center' +
+								'</a>'
+							'</p>' +
+						'</div>';
+			jQuery('body').append(html);
+		};
+
+		this.style = function() {
+
+			jQuery('#survey').css({
+				'display' 	: 'none',
+				'position'	: 'fixed', 
+				'zIndex'	: '999999', 
+				'right'		: '0px',
+				'bottom'	: '15%', 
+				'height'	: 'auto', 
+				'width'		: '150px',
+				'padding'	: '0px 10px', 
+				'background-color': 'rgb(46, 47, 47)',
+				'opacity'	: '0.75',
+				'border-left': '6px solid rgb(0, 0, 0)'
+			});
+
+			jQuery('#survey-button-overlay').css({
+			    'cursor': 'pointer',
+			    'height': jQuery('#survey').height(),
+			    'position': 'fixed',
+			    'right': '6px',
+			    'width': '20px'
+			});
+
+			jQuery('#survey-close').css({
+				'background-color': '#000',
+			    'border-radius': '10px',
+			    'color'		: '#fffffff',
+			    'font-size'	: '12px',
+			    'left'		: '-12px',
+			    'padding'	: '0 6px',
+			    'position'	: 'absolute',
+			    'top' 		: '-8px',
+			    'display' 	: 'none',
+			    'cursor' 	: 'pointer'
+			});
+
+			jQuery('#survey p').css({
+				'font'   : '12px/19px RalewayBold',
+				'color'  : 'rgb(255, 255, 255)',
+				//'cursor' : 'pointer'
+			});
+
+			jQuery('#survey span').css({
+				'font' : '13px/19px RalewayBold',
+				'color': 'rgb(204, 102, 0)'
+			});
+
+			this.widthOffScreen = '-' + (parseInt(jQuery('#survey').width()) + 20) + 'px';
+
+			var right = this.widthOffScreen;
+			jQuery('#survey').css('right',right);
+			jQuery('#survey').show();
+		};
+
+		this.slideInAfter = function(second) {
+			var that = this;
+			setTimeout(function(){
+				jQuery('#survey').stop().animate({right: '0px'}, 300);
+				that.addClickEvent();
+				that.slideOutAfter(that.slideOutTime);
+			},second)
+		};
+
+		this.slideOutAfter = function(second) {
+			var that = this;
+			setTimeout(function(){
+				jQuery('#survey').stop().animate({right: that.widthOffScreen}, 300);
+				that.addMouseEvent();
+			},second)
+		};
+
+
+		this.addMouseEvent = function() {
+			var that = this;
+			mouseover();
+			jQuery('#survey-close').off().on('click', function(){
+				jQuery(this).parent().stop().animate({ right: that.widthOffScreen }, 300, 'linear',function(){
+					mouseover();
+				}); 
+				jQuery('#survey-close').hide();
+			});
+
+			function mouseover() {
+				jQuery("#survey").mouseover(function() { 
+					jQuery(this).stop().animate({ right: "0px" }, 300, 'linear', function(){
+						jQuery("#survey").off();
+						jQuery('#survey-close').show();
+					}); 
+				}).mouseout(function() { 
+					//jQuery(this).stop().animate({ right: right }, 500); 
+				}) 
+			}
+		};
+
+		this.addClickEvent = function() {
+			var that = this;
+			/*jQuery('#survey p').on('click',function(){
+				jQuery('#jbookmark').show();
+				jQuery('#survey-close').click();
+			})*/
+		};
+
+	}
+	Button.prototype = new HTMLBuilder();
+	Button.prototype.constructor = Button;
+
+
+	jQuery('#jbookmark').remove();
+
+	var survey = new Button();
+	survey.load();
+
+
 	var storage = new Storage();
+	var overlay = new OverLay();
 	var container = new Container();
 	var navigation = new Navigation();
 
-	//jQuery('#HC-menu').on('click',function(){
+	
+
+	jQuery('#bookmark-page').on('click', function(){
 		storage.save();
-	//})
+	})
 
-	//navigation.loadItems(storage.retrieve());
+	jQuery('#bookmark-center').on('click', function(){
+		jQuery('#jbookmark').show();
+		jQuery('#jbookmark-overlay').show();
+		scrollingEffect();
+	})
+
+	navigation.loadItems(storage.retrieve());
 
 
 
-	var items = [];
+	/*var items = [];
 
-	for(var i =0; i < 18; i++) {
+	for(var i =0; i < 20; i++) {
 		items.push({
 			url: "http://www.healthcentral.com/adhd/cf/slideshows/10-signs-adhd-school?ic=help",
 		    image: "http://www.healthcentral.com/sites/www.healthcentral.com/files/ADDorADHD_0.jpg",
@@ -251,12 +426,12 @@
 		    content: "Even though ADHD is not a learning disability, it might greatly impact your child’s learning and..."
 		})
 	}
-	navigation.loadItems(items);
+	navigation.loadItems(items);*/
 
 })(jQuery)
 
 
-
+function scrollingEffect() {
 
 // init varibales
 var container_height = jQuery('#jbookmark-container').height();
@@ -282,7 +457,7 @@ jQuery('.nav-item').each(function(){
 
 
 // fit number of elements
-var number_item_fit_container = Math.round(container_height/(item_height + 20));
+var number_item_fit_container = Math.floor(container_height/(item_height + margin));
 for(var i = number_item_fit_container; i < item_objects.length; i++) {
 	var currElement = jQuery('#jbookmark-' + item_objects[i].id);
 	var top_align = currElement.offset().top - currElement.prev().offset().top - 0.5;
@@ -296,41 +471,40 @@ for(var i = 0; i < item_objects.length; i++) {
 	item_objects[i].top = parseInt(jQuery('#jbookmark-' + item_objects[i].id).css('top')) * -1;
 }
 
+jQuery('.jbookmark-nav').append('<li style="height:120px"></li>');
 
 // scroll effect
 jQuery('.jbookmark-nav').on('scroll',function() {
 	var scrolltop = jQuery(this).scrollTop();
 	for(var i = 0; i < item_objects.length; i++) {
 		if(i < number_item_fit_container) {
-			var scrollvalue = i === 0 ? 0 : 1;
-			if( jQuery('#jbookmark-' + item_objects[i].id).offset().top < jQuery('#jbookmark-1').offset().top ) {
-				scrollvalue =  120 + i;
-			}
-			else {
-			//	var last_id = i === 0 ? 0 : i - 1;
-			//	if(jQuery('#jbookmark-' + item_objects[last_id].id).offset().top <= jQuery('#jbookmark-1').offset().top) {
-					
-					scrollvalue = scrollvalue * scrolltop/3;
-			//	}
-			//	else {
-			//		scrollvalue = scrollvalue;
-			//	}
-			}
-			newtop =  (scrolltop - scrollvalue) + 'px';
+			var scrollvalue = i === 0 ? 0 : 1;			
+			scrollvalue = scrollvalue * scrolltop;
+			var newtop =  (scrolltop - scrollvalue) + 'px';
 		}
 		else {
 			var newtop = item_objects[i].top - scrolltop;
 			if(newtop < 0) {
-				//var last_id = i === 0 ? 0 : i - 3;
-				//if(jQuery('#jbookmark-' + item_objects[last_id].id).offset().top <= jQuery('#jbookmark-1').offset().top) {
-					newtop = ((newtop * -1) - scrolltop/3) + 'px';
-				//}
+				var last_id = i - (number_item_fit_container - 1);
+				if(parseInt(jQuery('#jbookmark-' + item_objects[last_id].id).offset().top) <= parseInt(jQuery('#jbookmark-' + item_objects[0].id).offset().top)) {
+					newtop = '0px';
+				}
+				else {
+					newtop = ((newtop * -1)) + 'px';
+				}
 			}
 			else {
-				newtop =  '-' + (newtop + scrolltop/3) + 'px';
+				var last_id =  i - (number_item_fit_container - 1);
+				if(parseInt(jQuery('#jbookmark-' + item_objects[last_id].id).offset().top) <= parseInt(jQuery('#jbookmark-' + item_objects[0].id).offset().top)) {
+					newtop =  '0px';
+				}
+				else {
+					newtop =  '-' + (newtop) + 'px';
+				}
 			}
 		}
 		jQuery('#jbookmark-' + item_objects[i].id).css('top',newtop);
 	}
 })
 
+}
